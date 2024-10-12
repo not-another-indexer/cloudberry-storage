@@ -4,6 +4,19 @@ from generated import cloudberry_storage_pb2 as pb2
 
 class CloudberryStorageService(pb2_grpc.CloudberryStorageServicer):
     def InitBucket(self, request, context):
+        """
+        Инициализирует корзину.
+
+        Args:
+            request (InitBucketRequest): Запрос на инициализацию корзины, содержащий UUID корзины.
+                - bucket_uuid (string): UUID корзины, которую необходимо инициализировать.
+            context (grpc.ServicerContext): Контекст запроса.
+
+        Returns:
+            InitBucketResponse: Ответ с сообщением о статусе и успехе операции.
+                - status_message (string): Сообщение о статусе операции.
+                - success (bool): Флаг успешности операции.
+        """
         print(f"инициализация корзины с UUID: {request.bucket_uuid}")
         response = pb2.InitBucketResponse()
 
@@ -17,6 +30,19 @@ class CloudberryStorageService(pb2_grpc.CloudberryStorageServicer):
         return response
 
     def DestroyBucket(self, request, context):
+        """
+        Уничтожает корзину.
+
+        Args:
+            request (DestroyBucketRequest): Запрос на уничтожение корзины, содержащий UUID корзины.
+                - bucket_uuid (string): UUID корзины, которую необходимо уничтожить.
+            context (grpc.ServicerContext): Контекст запроса.
+
+        Returns:
+            DestroyBucketResponse: Ответ с сообщением о статусе и успехе операции.
+                - status_message (string): Сообщение о статусе операции.
+                - success (bool): Флаг успешности операции.
+        """
         print(f"уничтожение корзины с UUID: {request.bucket_uuid}")
         response = pb2.DestroyBucketResponse()
 
@@ -30,6 +56,18 @@ class CloudberryStorageService(pb2_grpc.CloudberryStorageServicer):
         return response
 
     def PutEntry(self, request_iterator, context):
+        """
+        Добавляет записи в корзину.
+
+        Args:
+            request_iterator (Iterator[PutEntryRequest]): Итератор запросов на добавление записей, содержащий метаданные или данные чанков.
+            context (grpc.ServicerContext): Контекст запроса.
+
+        Returns:
+            PutEntryResponse: Ответ с сообщением о статусе и успехе операции.
+                - status_message (string): Сообщение о статусе операции.
+                - success (bool): Флаг успешности операции.
+        """
         response = pb2.PutEntryResponse()
 
         for request in request_iterator:
@@ -44,6 +82,19 @@ class CloudberryStorageService(pb2_grpc.CloudberryStorageServicer):
         return response
 
     def RemoveEntry(self, request, context):
+        """
+        Удаляет запись из корзины.
+
+        Args:
+            request (RemoveEntryRequest): Запрос на удаление записи, содержащий ID содержимого.
+                - content_id (string): ID содержимого, которое необходимо удалить.
+            context (grpc.ServicerContext): Контекст запроса.
+
+        Returns:
+            RemoveEntryResponse: Ответ с сообщением о статусе и успехе операции.
+                - status_message (string): Сообщение о статусе операции.
+                - success (bool): Флаг успешности операции.
+        """
         print(f"удаление записи с ID содержимого: {request.content_id}")
         response = pb2.RemoveEntryResponse()
 
