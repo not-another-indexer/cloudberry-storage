@@ -1,6 +1,12 @@
+import os
+import sys
+
 import grpc
 from concurrent import futures
 import time
+
+# добавляем папку 'generated' в путь
+sys.path.append(os.path.join(os.path.dirname(__file__), '../../../generated'))
 
 from generated import cloudberry_storage_pb2_grpc as pb2_grpc
 from ru.nai.cloudberry_storage.controller import CloudberryStorageService
