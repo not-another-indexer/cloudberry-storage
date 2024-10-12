@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+service CloudberryStorage {
+    rpc InitBucket (InitBucketRequest) returns (InitBucketResponse);
+    rpc DestroyBucket (DestroyBucketRequest) returns (DestroyBucketResponse);
+    rpc PutEntry (stream PutEntryRequest) returns (PutEntryResponse);
+    rpc RemoveEntry (RemoveEntryRequest) returns (RemoveEntryResponse);
+}
+
+message InitBucketRequest {
+    string bucket_uuid = 1;
+}
+
+message InitBucketResponse {
+    string status_message = 1;
+    bool success = 2;
+}
+
+message DestroyBucketRequest {
+    string bucket_uuid = 1;
+}
+
+message DestroyBucketResponse {
+    string status_message = 1;
+    bool success = 2;
+}
+
+message ContentMetadata {
+    string content_id = 1;
+    string extension = 2;
+}
+
+message PutEntryRequest {
+    oneof payload {
+        ContentMetadata metadata = 1;
+        bytes chunk_data = 2;
+    }
+}
+
+message PutEntryResponse {
+    string status_message = 1;
+    bool success = 2;
+}
+
+message RemoveEntryRequest {
+    string content_id = 1;
+}
+
+message RemoveEntryResponse {
+    string status_message = 1;
+    bool success = 2;
+}
