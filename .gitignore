@@ -1,0 +1,5 @@
+.venv
+.idea
+generated
+/ru/nai/cloudberry_storage/buckets.json
+/ru/nai/cloudberry_storage/cloudberry_storage.log
