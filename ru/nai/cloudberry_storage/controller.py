@@ -8,7 +8,7 @@ from generated import cloudberry_storage_pb2 as pb2
 
 
 class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
-    buckets = {}
+    buckets = { "1":{} }
 
     def InitBucket(self, request, context):
         bucket_uuid = request.bucket_uuid
@@ -34,23 +34,36 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
 
     def PutEntry(self, request_iterator, context):
         current_metadata = None
+        content_data = bytearray()
+
         for req in request_iterator:
             if req.HasField('metadata'):
                 current_metadata = req.metadata
+                print(current_metadata)
                 bucket_uuid = current_metadata.bucket_uuid
+
                 if bucket_uuid not in self.buckets:
                     context.set_code(grpc.StatusCode.NOT_FOUND)
                     context.set_details(f"Bucket {bucket_uuid} not found.")
                     return pb2.Empty()
+
                 self.buckets[bucket_uuid][current_metadata.content_uuid] = {
                     'metadata': current_metadata,
                     'data': b''
                 }
                 print(f"Metadata received for content {current_metadata.content_uuid}")
-            if req.HasField('chunk_data'):
-                content_uuid = current_metadata.content_uuid
-                self.buckets[bucket_uuid][content_uuid]['data'] += req.chunk_data
-                print(f"Chunk data received for content {content_uuid}, size: {len(req.chunk_data)}")
+
+            elif req.HasField('chunk_data'):
+                content_data.extend(req.chunk_data)
+                print(f"Chunk data received, size: {len(req.chunk_data)}")
+
+        if current_metadata:
+            content_uuid = current_metadata.content_uuid
+            self.buckets[bucket_uuid][content_uuid]['data'] = content_data
+            print(f"Stored content {content_uuid} with {len(content_data)} bytes in bucket {bucket_uuid}")
+        else:
+            print("Dont save")
+
         return pb2.Empty()
 
     def RemoveEntry(self, request, context):
@@ -81,7 +94,12 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
                 response_entry = pb2.FindResponseEntry(
                     content_uuid=content_uuid,
                     metrics=[
-                        pb2.Metric(parameter=pb2.Parameter.SEMANTIC_ONE_PEACE_SIMILARITY, value=0.95)
+                        pb2.Metric(parameter=pb2.Parameter.SEMANTIC_ONE_PEACE_SIMILARITY, value=444.95),
+                        pb2.Metric(parameter=pb2.Parameter.RECOGNIZED_TEXT_SIMILARITY, value=0.45),
+                        pb2.Metric(parameter=pb2.Parameter.TEXTUAL_DESCRIPTION_SIMILARITY, value=0.35),
+                        pb2.Metric(parameter=pb2.Parameter.RECOGNIZED_FACE_SIMILARITY, value=0.25),
+                        pb2.Metric(parameter=pb2.Parameter.RECOGNIZED_TEXT_BM25_RANK, value=0.15),
+                        pb2.Metric(parameter=pb2.Parameter.TEXTUAL_DESCRIPTION_BM25_RANK, value=0.5),
                     ]
                 )
                 response.entries.append(response_entry)
