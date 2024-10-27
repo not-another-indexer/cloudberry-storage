@@ -1,6 +1,5 @@
 import grpc
 from concurrent import futures
-import sys
 import re
 import uuid
 import json
@@ -8,11 +7,8 @@ import os
 import logging
 import base64
 
-sys.path.append('../../../generated')
-from generated import cloudberry_storage_pb2_grpc as pb2_grpc
-from generated import cloudberry_storage_pb2 as pb2
+import cloudberry_storage_pb2_grpc, cloudberry_storage_pb2
 
-# Настройка логирования
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s',
                     handlers=[logging.FileHandler("cloudberry_storage.log"), logging.StreamHandler()])
@@ -35,7 +31,7 @@ def is_plain_text(text):
     return bool(re.match("^[A-Za-z0-9_ .,!?'-]*$", text))
 
 
-class CloudberryStorageService(pb2_grpc.CloudberryStorageServicer):
+class CloudberryStorageService(cloudberry_storage_pb2_grpc.CloudberryStorageServicer):
     BUCKETS_FILE = "buckets.json"
 
     def __init__(self):
@@ -58,22 +54,22 @@ class CloudberryStorageService(pb2_grpc.CloudberryStorageServicer):
             if not is_valid_uuid(bucket_uuid):
                 context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
                 context.set_details(f"Invalid UUID: {bucket_uuid}.")
-                return pb2.Empty()
+                return cloudberry_storage_pb2.Empty()
 
             if bucket_uuid in self.buckets:
                 context.set_code(grpc.StatusCode.ALREADY_EXISTS)
                 context.set_details(f"Bucket {bucket_uuid} already exists.")
-                return pb2.Empty()
+                return cloudberry_storage_pb2.Empty()
             else:
                 self.buckets[bucket_uuid] = {}
                 logging.info(f"Initialized bucket: {bucket_uuid}")
                 self.save_buckets()  # Save changes to the file
-                return pb2.Empty()
+                return cloudberry_storage_pb2.Empty()
         except Exception as e:
             logging.error(f"Error initializing bucket {bucket_uuid}: {str(e)}")
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details("An internal error occurred.")
-            return pb2.Empty()
+            return cloudberry_storage_pb2.Empty()
 
     def DestroyBucket(self, request, context):
         bucket_uuid = request.p_bucket_uuid
@@ -82,22 +78,22 @@ class CloudberryStorageService(pb2_grpc.CloudberryStorageServicer):
             if not is_valid_uuid(bucket_uuid):
                 context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
                 context.set_details(f"Invalid UUID: {bucket_uuid}.")
-                return pb2.Empty()
+                return cloudberry_storage_pb2.Empty()
 
             if bucket_uuid in self.buckets:
                 del self.buckets[bucket_uuid]
                 logging.info(f"Destroyed bucket: {bucket_uuid}")
                 self.save_buckets()  # Save changes to the file
-                return pb2.Empty()
+                return cloudberry_storage_pb2.Empty()
             else:
                 context.set_code(grpc.StatusCode.OK)
                 context.set_details(f"Bucket {bucket_uuid} not found.")
-                return pb2.Empty()
+                return cloudberry_storage_pb2.Empty()
         except Exception as e:
             logging.error(f"Error destroying bucket {bucket_uuid}: {str(e)}")
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details("An internal error occurred.")
-            return pb2.Empty()
+            return cloudberry_storage_pb2.Empty()
 
     def PutEntry(self, request, context):
         content_uuid = request.p_metadata.p_content_uuid
@@ -110,28 +106,28 @@ class CloudberryStorageService(pb2_grpc.CloudberryStorageServicer):
             if not is_valid_image_extension(file_extension):
                 context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
                 context.set_details(f"Invalid file extension: {file_extension}.")
-                return pb2.Empty()
+                return cloudberry_storage_pb2.Empty()
 
             if not file_content:
                 context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
                 context.set_details("File content cannot be empty.")
-                return pb2.Empty()
+                return cloudberry_storage_pb2.Empty()
 
             if not is_plain_text(description):
                 context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
                 context.set_details("Description must be plain text.")
-                return pb2.Empty()
+                return cloudberry_storage_pb2.Empty()
 
             if bucket_uuid not in self.buckets:
                 context.set_code(grpc.StatusCode.NOT_FOUND)
                 context.set_details(f"Bucket {bucket_uuid} not found.")
-                return pb2.Empty()
+                return cloudberry_storage_pb2.Empty()
 
             bucket = self.buckets[bucket_uuid]
             if content_uuid in bucket:
                 context.set_code(grpc.StatusCode.OK)
                 context.set_details(f"Content {content_uuid} already exists.")
-                return pb2.Empty()
+                return cloudberry_storage_pb2.Empty()
 
             self.buckets[bucket_uuid][content_uuid] = {
                 "extension": file_extension,
@@ -141,12 +137,12 @@ class CloudberryStorageService(pb2_grpc.CloudberryStorageServicer):
             logging.info(f"Added entry {content_uuid} to bucket {bucket_uuid}")
             self.save_buckets()
 
-            return pb2.Empty()
+            return cloudberry_storage_pb2.Empty()
         except Exception as e:
             logging.error(f"Error adding entry {content_uuid} to bucket {bucket_uuid}: {str(e)}")
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details("An internal error occurred.")
-            return pb2.Empty()
+            return cloudberry_storage_pb2.Empty()
 
     def RemoveEntry(self, request, context):
         bucket_uuid = request.p_bucket_uuid
@@ -156,22 +152,22 @@ class CloudberryStorageService(pb2_grpc.CloudberryStorageServicer):
             if not is_valid_uuid(bucket_uuid) or not is_valid_uuid(content_uuid):
                 context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
                 context.set_details(f"Invalid UUIDs: bucket_uuid={bucket_uuid}, content_uuid={content_uuid}.")
-                return pb2.Empty()
+                return cloudberry_storage_pb2.Empty()
 
             if bucket_uuid in self.buckets and content_uuid in self.buckets[bucket_uuid]:
                 del self.buckets[bucket_uuid][content_uuid]
                 logging.info(f"Removed entry {content_uuid} from bucket {bucket_uuid}")
                 self.save_buckets()  # Save changes to the file
-                return pb2.Empty()
+                return cloudberry_storage_pb2.Empty()
             else:
                 context.set_code(grpc.StatusCode.NOT_FOUND)
                 context.set_details(f"Entry {content_uuid} in bucket {bucket_uuid} not found.")
-                return pb2.Empty()
+                return cloudberry_storage_pb2.Empty()
         except Exception as e:
             logging.error(f"Error removing entry {content_uuid} from bucket {bucket_uuid}: {str(e)}")
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details("An internal error occurred.")
-            return pb2.Empty()
+            return cloudberry_storage_pb2.Empty()
 
     def Find(self, request, context):
         bucket_uuid = request.p_bucket_uuid
@@ -181,22 +177,31 @@ class CloudberryStorageService(pb2_grpc.CloudberryStorageServicer):
             if bucket_uuid not in self.buckets:
                 context.set_code(grpc.StatusCode.NOT_FOUND)
                 context.set_details(f"Bucket {bucket_uuid} not found.")
-                return pb2.FindResponse()
+                return cloudberry_storage_pb2.FindResponse()
 
             logging.info(f"Searching in bucket {bucket_uuid} with query: {query}")
 
-            response = pb2.FindResponse()
+            response = cloudberry_storage_pb2.FindResponse()
             for content_uuid, entry in self.buckets[bucket_uuid].items():
                 if query.lower() in entry['description'].lower():
-                    response_entry = pb2.FindResponseEntry(
+                    response_entry = cloudberry_storage_pb2.FindResponseEntry(
                         p_content_uuid=content_uuid,
                         p_metrics=[
-                            pb2.Metric(p_parameter=pb2.Parameter.SEMANTIC_ONE_PEACE_SIMILARITY, p_value=444.95),
-                            pb2.Metric(p_parameter=pb2.Parameter.RECOGNIZED_TEXT_SIMILARITY, p_value=0.45),
-                            pb2.Metric(p_parameter=pb2.Parameter.TEXTUAL_DESCRIPTION_SIMILARITY, p_value=0.35),
-                            pb2.Metric(p_parameter=pb2.Parameter.RECOGNIZED_FACE_SIMILARITY, p_value=0.25),
-                            pb2.Metric(p_parameter=pb2.Parameter.RECOGNIZED_TEXT_BM25_RANK, p_value=0.15),
-                            pb2.Metric(p_parameter=pb2.Parameter.TEXTUAL_DESCRIPTION_BM25_RANK, p_value=0.5),
+                            cloudberry_storage_pb2.Metric(
+                                p_parameter=cloudberry_storage_pb2.Parameter.SEMANTIC_ONE_PEACE_SIMILARITY,
+                                p_value=444.95),
+                            cloudberry_storage_pb2.Metric(
+                                p_parameter=cloudberry_storage_pb2.Parameter.RECOGNIZED_TEXT_SIMILARITY, p_value=0.45),
+                            cloudberry_storage_pb2.Metric(
+                                p_parameter=cloudberry_storage_pb2.Parameter.TEXTUAL_DESCRIPTION_SIMILARITY,
+                                p_value=0.35),
+                            cloudberry_storage_pb2.Metric(
+                                p_parameter=cloudberry_storage_pb2.Parameter.RECOGNIZED_FACE_SIMILARITY, p_value=0.25),
+                            cloudberry_storage_pb2.Metric(
+                                p_parameter=cloudberry_storage_pb2.Parameter.RECOGNIZED_TEXT_BM25_RANK, p_value=0.15),
+                            cloudberry_storage_pb2.Metric(
+                                p_parameter=cloudberry_storage_pb2.Parameter.TEXTUAL_DESCRIPTION_BM25_RANK,
+                                p_value=0.5),
                         ]
                     )
                     response.p_entries.append(response_entry)
@@ -211,12 +216,12 @@ class CloudberryStorageService(pb2_grpc.CloudberryStorageServicer):
             logging.error(f"Error searching in bucket {bucket_uuid} with query '{query}': {str(e)}")
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details("An internal error occurred.")
-            return pb2.FindResponse()
+            return cloudberry_storage_pb2.FindResponse()
 
 
 def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-    pb2_grpc.add_CloudberryStorageServicer_to_server(CloudberryStorageService(), server)
+    cloudberry_storage_pb2_grpc.add_CloudberryStorageServicer_to_server(CloudberryStorageService(), server)
     server.add_insecure_port('[::]:50051')
     logging.info("Server started on port 50051")
     server.start()

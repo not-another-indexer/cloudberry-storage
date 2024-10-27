@@ -1,5 +1,6 @@
 .venv
 .idea
-generated
-/ru/nai/cloudberry_storage/buckets.json
-/ru/nai/cloudberry_storage/cloudberry_storage.log
+*_pb2*
+buckets.json
+cloudberry_storage.log
+__pycache__

@@ -1,20 +1,17 @@
-import os
-import sys
-
 import grpc
 from concurrent import futures
 import time
 
-# добавляем папку 'generated' в путь
-sys.path.append(os.path.join(os.path.dirname(__file__), '../../../generated'))
+from controller import CloudberryStorageService
+import cloudberry_storage_pb2_grpc
 
-from generated import cloudberry_storage_pb2_grpc as pb2_grpc
-from ru.nai.cloudberry_storage.controller import CloudberryStorageService
-
+import sys
+from os.path import dirname
+sys.path.append(dirname("generated"))
 
 def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-    pb2_grpc.add_CloudberryStorageServicer_to_server(CloudberryStorageService(), server)
+    cloudberry_storage_pb2_grpc.add_CloudberryStorageServicer_to_server(CloudberryStorageService(), server)
 
     server.add_insecure_port('[::]:50051')
     server.start()
