@@ -48,8 +48,8 @@ class CloudberryStorageService(pb2_grpc.CloudberryStorageServicer):
         return {}
 
     def save_buckets(self):
-        with open(self.BUCKETS_FILE, 'w') as f:
-            json.dump(self.buckets, f)
+        with open(self.BUCKETS_FILE, 'w') as file:
+            json.dump(self.buckets, file)
 
     def InitBucket(self, request, context):
         bucket_uuid = request.p_bucket_uuid
@@ -189,22 +189,22 @@ class CloudberryStorageService(pb2_grpc.CloudberryStorageServicer):
             for content_uuid, entry in self.buckets[bucket_uuid].items():
                 if query.lower() in entry['description'].lower():
                     response_entry = pb2.FindResponseEntry(
-                        content_uuid=content_uuid,
-                        metrics=[
-                            pb2.Metric(parameter=pb2.Parameter.SEMANTIC_ONE_PEACE_SIMILARITY, value=444.95),
-                            pb2.Metric(parameter=pb2.Parameter.RECOGNIZED_TEXT_SIMILARITY, value=0.45),
-                            pb2.Metric(parameter=pb2.Parameter.TEXTUAL_DESCRIPTION_SIMILARITY, value=0.35),
-                            pb2.Metric(parameter=pb2.Parameter.RECOGNIZED_FACE_SIMILARITY, value=0.25),
-                            pb2.Metric(parameter=pb2.Parameter.RECOGNIZED_TEXT_BM25_RANK, value=0.15),
-                            pb2.Metric(parameter=pb2.Parameter.TEXTUAL_DESCRIPTION_BM25_RANK, value=0.5),
+                        p_content_uuid=content_uuid,
+                        p_metrics=[
+                            pb2.Metric(p_parameter=pb2.Parameter.SEMANTIC_ONE_PEACE_SIMILARITY, p_value=444.95),
+                            pb2.Metric(p_parameter=pb2.Parameter.RECOGNIZED_TEXT_SIMILARITY, p_value=0.45),
+                            pb2.Metric(p_parameter=pb2.Parameter.TEXTUAL_DESCRIPTION_SIMILARITY, p_value=0.35),
+                            pb2.Metric(p_parameter=pb2.Parameter.RECOGNIZED_FACE_SIMILARITY, p_value=0.25),
+                            pb2.Metric(p_parameter=pb2.Parameter.RECOGNIZED_TEXT_BM25_RANK, p_value=0.15),
+                            pb2.Metric(p_parameter=pb2.Parameter.TEXTUAL_DESCRIPTION_BM25_RANK, p_value=0.5),
                         ]
                     )
-                    response.entries.append(response_entry)
+                    response.p_entries.append(response_entry)
 
-            if not response.entries:
+            if not response.p_entries:
                 logging.info(f"No results found for query: {query}")
             else:
-                logging.info(f"Found {len(response.entries)} result(s) for query: {query}")
+                logging.info(f"Found {len(response.p_entries)} result(s) for query: {query}")
 
             return response
         except Exception as e:
@@ -216,7 +216,7 @@ class CloudberryStorageService(pb2_grpc.CloudberryStorageServicer):
 
 def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-    pb2_grpc.add_CloudberryStorageServicer_to_server(CloudberryStorageServicer(), server)
+    pb2_grpc.add_CloudberryStorageServicer_to_server(CloudberryStorageService(), server)
     server.add_insecure_port('[::]:50051')
     logging.info("Server started on port 50051")
     server.start()
