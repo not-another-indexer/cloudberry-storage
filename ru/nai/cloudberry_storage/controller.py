@@ -10,7 +10,7 @@ from PIL import Image
 from io import BytesIO
 from sentence_transformers import SentenceTransformer
 from torchvision import transforms
-from qdrant_client import QdrantClient
+from qdrant_client import QdrantClient, models
 from qdrant_client.grpc import PointStruct
 from qdrant_client.http.models import Distance, VectorParams
 from qdrant_client.http.exceptions import UnexpectedResponse
@@ -145,7 +145,7 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
             content_data = request.p_data
             image = Image.open(BytesIO(content_data)).convert("RGB")
             # image_vector = self.vectorize_image(image)
-            image_vector = np.zeros(768)
+            image_vector = np.zeros(512)
             # Получение OCR текста и вектора
             ocr_text = pytesseract.image_to_string(image, lang='eng+rus').strip()
             # ocr_vector = self.text_model.encode(ocr_text) if ocr_text else None
@@ -166,7 +166,7 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
             self.client.upsert(
                 collection_name=bucket_uuid,
                 points=[
-                    PointStruct(
+                    models.PointStruct(
                         id=content_uuid,
                         vector=vectors,
                         payload={
