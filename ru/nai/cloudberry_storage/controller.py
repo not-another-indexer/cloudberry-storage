@@ -14,6 +14,7 @@ from qdrant_client import QdrantClient
 from qdrant_client.grpc import PointStruct
 from qdrant_client.http.models import Distance, VectorParams
 from qdrant_client.http.exceptions import UnexpectedResponse
+import numpy as np
 
 # sys.path.append('generated')
 import cloudberry_storage_pb2_grpc as pb2_grpc
@@ -38,8 +39,8 @@ logger = logging.getLogger(__name__)
 class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
     def __init__(self):
         self.client = QdrantClient("http://localhost:6333")
-        self.one_peace_model = self.init_one_peace_model()
-        self.text_model = self.init_sbert_model()
+        # self.one_peace_model = self.init_one_peace_model()
+        # self.text_model = self.init_sbert_model()
         self.transforms = transforms.Compose([
             transforms.Resize((224, 224)),
             transforms.ToTensor(),
@@ -134,19 +135,14 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
         for req in request_iterator:
             if req.WhichOneof("payload") == "metadata":
                 content_metadata = req.metadata
-                print(f"Получены метаданные: {content_metadata.p_content_uuid}, {content_metadata.p_bucket_uuid}, "
-                      f"{content_metadata.p_extension}, {content_metadata.p_description}")
+                logger.info(f"Received metadata: {content_metadata}")
             elif req.WhichOneof("payload") == "chunk_data":
-                if content_metadata is None:
-                    context.set_details("Метаданные должны быть переданы до передачи данных чанков.")
-                    context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
-                    return pb2.Empty()
                 content_data.extend(req.chunk_data)
-                print(f"Получены данные чанка размером: {len(req.chunk_data)} байт")
-
-            elif req.HasField('chunk_data'):
-                content_data.extend(req.chunk_data)
-                print(f"Chunk data received, size: {len(req.chunk_data)}")
+                logger.info(f"Received chunk data of size: {len(req.chunk_data)} bytes")
+            else:
+                context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+                context.set_details("Invalid payload type in PutEntry request.")
+                return pb2.Empty()
 
         if not content_metadata:
             context.set_details("Не были переданы метаданные.")
@@ -155,17 +151,18 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
 
         try:
             image = Image.open(BytesIO(content_data)).convert("RGB")
-            image_vector = self.vectorize_image(image)
-
+            # image_vector = self.vectorize_image(image)
+            image_vector = np.zeros(768)
             # Получение OCR текста и вектора
             ocr_text = pytesseract.image_to_string(image, lang='eng+rus').strip()
-            ocr_vector = self.text_model.encode(ocr_text) if ocr_text else None
+            # ocr_vector = self.text_model.encode(ocr_text) if ocr_text else None
+            ocr_vector = None
             print(f"Распознанный текст OCR: {ocr_text}")
 
             # Векторизация текстового описания
-            description_vector = self.text_model.encode(
-                content_metadata.p_description) if content_metadata.p_description else None
-
+            # description_vector = self.text_model.encode(
+            #     content_metadata.p_description) if content_metadata.p_description else None
+            description_vector = None
             # Создание записи для Qdrant
             vectors = {
                 "one_peace_embedding": image_vector,
