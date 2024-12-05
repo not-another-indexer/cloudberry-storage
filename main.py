@@ -3,11 +3,11 @@ from concurrent import futures
 import time
 
 from controller import CloudberryStorageService
-import cloudberry_storage_pb2_grpc
+from ru.nai.cloudberry_storage import cloudberry_storage_pb2_grpc
 
 import sys
 from os.path import dirname
-sys.path.append(dirname("generated"))
+sys.path.append(dirname("ru/nai/cloudberry_storage/generated"))
 
 def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))

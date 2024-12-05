@@ -10,12 +10,12 @@ from PIL import Image
 from io import BytesIO
 from sentence_transformers import SentenceTransformer
 from torchvision import transforms
-from qdrant_client import QdrantClient, models
+from qdrant_client import QdrantClient
 from qdrant_client.grpc import PointStruct
 from qdrant_client.http.models import Distance, VectorParams
 from qdrant_client.http.exceptions import UnexpectedResponse
 
-sys.path.append('../../../generated')
+# sys.path.append('generated')
 from generated import cloudberry_storage_pb2_grpc as pb2_grpc
 from generated import cloudberry_storage_pb2 as pb2
 

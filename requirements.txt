@@ -9,3 +9,4 @@ deep_translator
 nltk
 pillow~=10.4.0
 torchvision~=0.20.1
+qdrant_client
