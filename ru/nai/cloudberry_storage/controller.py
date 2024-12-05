@@ -35,7 +35,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
+class CloudberryStorageService(pb2_grpc.CloudberryStorageServicer):
     def __init__(self):
         self.client = QdrantClient("http://localhost:6333")
         self.one_peace_model = self.init_one_peace_model()
