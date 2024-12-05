@@ -247,7 +247,7 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
 
     def combine_results(self, one_peace_results, description_results, ocr_results, parameters, count):
         combined_results = {}
-
+        logger.info(f"One-peace results: {one_peace_results}")
         for res in one_peace_results:
             uuid = res.id
             score = res.score
