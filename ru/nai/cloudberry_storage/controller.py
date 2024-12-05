@@ -153,7 +153,7 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
             logger.info(f"Распознанный текст OCR: {ocr_text}.")
 
             # Векторизация текстового описания
-            description_vector = self.text_model.encode(description) if description else None
+            description_vector = self.text_model.encode(description).tolist() if description else None
             # description_vector = np.random.rand(768).tolist()
             # Создание записи для Qdrant
             vectors = {
