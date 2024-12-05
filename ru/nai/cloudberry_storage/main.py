@@ -8,7 +8,7 @@ import time
 # добавляем папку 'generated' в путь
 sys.path.append(os.path.join(os.path.dirname(__file__), '../../../generated'))
 
-from ru.nai.cloudberry_storage.generated import cloudberry_storage_pb2_grpc as pb2_grpc
+from ru.nai.cloudberry_storage import cloudberry_storage_pb2_grpc as pb2_grpc
 from ru.nai.cloudberry_storage.controller import CloudberryStorageServicer
 
 

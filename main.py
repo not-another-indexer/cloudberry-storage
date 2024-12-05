@@ -3,7 +3,7 @@ from concurrent import futures
 import time
 
 from controller import CloudberryStorageService
-import cloudberry_storage_pb2_grpc
+from ru.nai.cloudberry_storage import cloudberry_storage_pb2_grpc
 
 import sys
 from os.path import dirname

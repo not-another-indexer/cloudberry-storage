@@ -16,8 +16,8 @@ from qdrant_client.http.models import Distance, VectorParams
 from qdrant_client.http.exceptions import UnexpectedResponse
 
 # sys.path.append('generated')
-import generated.cloudberry_storage_pb2_grpc as pb2_grpc
-import generated.cloudberry_storage_pb2 as pb2
+import cloudberry_storage_pb2_grpc as pb2_grpc
+import cloudberry_storage_pb2 as pb2
 
 ONE_PEACE_GITHUB_REPO_DIR_PATH = 'ONE-PEACE/'
 ONE_PEACE_MODEL_PATH = '/home/meno/models/one-peace.pt'

@@ -1,5 +1,5 @@
 import grpc
-from ru.nai.cloudberry_storage.generated import cloudberry_storage_pb2_grpc as pb2_grpc
+from ru.nai.cloudberry_storage import cloudberry_storage_pb2_grpc as pb2_grpc
 from generated import cloudberry_storage_pb2 as pb2
 
 def test_init_bucket(channel):
