@@ -46,7 +46,7 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         ])
 
-    def init_one_peace_model(self, model_dir=ONE_PEACE_MODEL_PATH, model_name=ONE_PEACE_MODEL_PATH):
+    def init_one_peace_model(self, model_dir=ONE_PEACE_GITHUB_REPO_DIR_PATH, model_name=ONE_PEACE_MODEL_PATH):
         if not os.path.isdir(model_dir):
             raise FileNotFoundError(f'The directory "{model_dir}" does not exist')
         if not os.path.isfile(model_name):
