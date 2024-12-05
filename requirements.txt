@@ -1,3 +1,11 @@
 protobuf
 grpcio
 grpcio-tools
+torch~=2.5.1
+numpy
+pytesseract~=0.3.13
+sentence_transformers
+deep_translator
+nltk
+pillow~=10.4.0
+torchvision~=0.20.1
