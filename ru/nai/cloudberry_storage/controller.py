@@ -248,7 +248,7 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
     def combine_results(self, one_peace_results, description_results, ocr_results, parameters, count):
         combined_results = {}
 
-        for res in one_peace_results['result']:
+        for res in one_peace_results:
             uuid = res['id']
             score = res['score']
             combined_results[uuid] = {
@@ -256,7 +256,7 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
                 'metrics': [{'parameter': 'SEMANTIC_ONE_PEACE_SIMILARITY', 'value': score}]
             }
 
-        for res in description_results['result']:
+        for res in description_results:
             uuid = res['id']
             score = res['score']
             if uuid in combined_results:
@@ -268,7 +268,7 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
                     'metrics': [{'parameter': 'TEXTUAL_DESCRIPTION_SIMILARITY', 'value': score}]
                 }
 
-        for res in ocr_results['result']:
+        for res in ocr_results:
             uuid = res['id']
             score = res['score']
             if uuid in combined_results:
