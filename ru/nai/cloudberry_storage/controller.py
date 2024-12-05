@@ -136,29 +136,13 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
 
         return pb2.Empty()
 
-    def PutEntry(self, request_iterator, context):
+    def PutEntry(self, request, context):
         logger.info("Получено изображение.")
-        content_metadata = None
-        content_data = bytearray()
-
-        for req in request_iterator:
-            if req.WhichOneof("payload") == "metadata":
-                content_metadata = req.metadata
-                logger.info(f"Полученная metadata: {content_metadata}.")
-            elif req.WhichOneof("payload") == "chunk_data":
-                content_data.extend(req.chunk_data)
-                logger.info(f"Получен чанк данных размером: {len(req.chunk_data)} bytes")
-            else:
-                context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
-                context.set_details("Invalid payload type in PutEntry request.")
-                return pb2.Empty()
-
-        if not content_metadata:
-            context.set_details("Не были переданы метаданные.")
-            context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
-            return pb2.Empty()
-
         try:
+            bucket_uuid = request.p_metadata.p_bucket_uuid
+            content_uuid = request.p_metadata.p_content_uuid
+            description = request.p_metadata.p_description
+            content_data = request.p_data
             image = Image.open(BytesIO(content_data)).convert("RGB")
             # image_vector = self.vectorize_image(image)
             image_vector = np.zeros(768)
@@ -180,19 +164,19 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
                 "ocr_text_sbert_embedding": ocr_vector
             }
             self.client.upsert(
-                collection_name=content_metadata.p_bucket_uuid,
+                collection_name=bucket_uuid,
                 points=[
                     PointStruct(
-                        id=content_metadata.p_content_uuid,
+                        id=content_uuid,
                         vector=vectors,
                         payload={
-                            "description": content_metadata.p_description or "",
+                            "description": description or "",
                             "ocr_text": ocr_text or ""
                         }
                     )
                 ]
             )
-            logger.info(f"Добавлена запись с ID {content_metadata.p_content_uuid} в коллекцию {content_metadata.p_bucket_uuid}.")
+            logger.info(f"Добавлена запись с ID {content_uuid} в коллекцию {bucket_uuid}.")
 
         except Exception as e:
             context.set_code(grpc.StatusCode.INTERNAL)
