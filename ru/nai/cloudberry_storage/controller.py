@@ -211,10 +211,12 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
         parameters = request.p_parameters
         count = request.p_count or 10
 
-        # one_peace_vector = self.one_peace_model(query)
-        one_peace_vector = np.random.rand(512).tolist()
-        # sbert_vector = self.text_model(query)
-        sbert_vector = np.random.rand(768).tolist()
+        text_tokens = self.one_peace_model.process_text([query])
+        with torch.no_grad():
+            one_peace_vector = self.one_peace_model.extract_text_features(text_tokens).cpu().numpy().tolist()
+        # one_peace_vector = np.random.rand(512).tolist()
+        sbert_vector = self.text_model.encode(query).cpu().numpy().tolist()
+        # sbert_vector = np.random.rand(768).tolist()
 
         one_peace_results = self.search_in_qdrant(bucket_uuid, one_peace_vector, "one_peace_embedding", count)
         description_results = self.search_in_qdrant(bucket_uuid, sbert_vector, "description_sbert_embedding", count)
