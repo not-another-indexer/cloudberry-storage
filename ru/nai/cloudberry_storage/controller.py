@@ -82,13 +82,16 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
         return model_sbert
 
     def InitBucket(self, request, context):
+        logger.info(f"Пришёл запрос с bucket_uuid: {request.p_bucket_uuid}.")
         p_bucket_uuid = request.p_bucket_uuid
 
         try:
             self.create_collection_if_not_exists(p_bucket_uuid)
+            logger.info(f"Коллекция успешно проинициализирована.")
         except Exception as e:
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details(f"Error creating Qdrant collection: {e}")
+            logger.error(f"Коллекция не создана из-за ошибки: {e}")
             return pb2.Empty()
 
         return pb2.Empty()
@@ -96,7 +99,7 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
     def create_collection_if_not_exists(self, collection_name):
         try:
             self.client.get_collection(collection_name)
-            print(f"Коллекция {collection_name} уже существует.")
+            logger.info(f"Коллекция {collection_name} уже существует.")
         except:
             self.client.create_collection(
                 collection_name=collection_name,
@@ -107,38 +110,44 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
                     "ocr_text_sbert_embedding": VectorParams(size=256, distance=Distance.COSINE),
                 }
             )
-            print(f"Создана коллекция {collection_name} с несколькими векторами.")
+            logger.info(f"Создана новая коллекция {collection_name} с несколькими векторами.")
 
     def DestroyBucket(self, request, context):
+        logger.info(f"Запрос на уничтожение коллекции с bucket_uuid: {request.p_bucket_uuid}.")
         p_bucket_uuid = request.p_bucket_uuid
         try:
             self.client.get_collection(p_bucket_uuid)
+            logger.info(f"Коллекция успешно найдена.")
         except UnexpectedResponse:
             context.set_code(grpc.StatusCode.NOT_FOUND)
             context.set_details(f"Bucket collection {p_bucket_uuid} not found.")
+            logger.error(f"Коллекция не найдена.")
             return pb2.Empty()
 
         try:
             self.client.delete_collection(p_bucket_uuid)
             print(f"Deleted collection for bucket: {p_bucket_uuid}")
+            logger.info(f"Коллекция успешно удалена.")
         except Exception as e:
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details(f"Error deleting Qdrant collection: {e}")
+            logger.error(f"Коллекция не уничтожена из-за ошибки: {e}.")
             return pb2.Empty()
 
         return pb2.Empty()
 
     def PutEntry(self, request_iterator, context):
+        logger.info("Получено изображение.")
         content_metadata = None
         content_data = bytearray()
 
         for req in request_iterator:
             if req.WhichOneof("payload") == "metadata":
                 content_metadata = req.metadata
-                logger.info(f"Received metadata: {content_metadata}")
+                logger.info(f"Полученная metadata: {content_metadata}.")
             elif req.WhichOneof("payload") == "chunk_data":
                 content_data.extend(req.chunk_data)
-                logger.info(f"Received chunk data of size: {len(req.chunk_data)} bytes")
+                logger.info(f"Получен чанк данных размером: {len(req.chunk_data)} bytes")
             else:
                 context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
                 context.set_details("Invalid payload type in PutEntry request.")
@@ -157,7 +166,7 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
             ocr_text = pytesseract.image_to_string(image, lang='eng+rus').strip()
             # ocr_vector = self.text_model.encode(ocr_text) if ocr_text else None
             ocr_vector = None
-            print(f"Распознанный текст OCR: {ocr_text}")
+            logger.info(f"Распознанный текст OCR: {ocr_text}.")
 
             # Векторизация текстового описания
             # description_vector = self.text_model.encode(
@@ -183,11 +192,12 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
                     )
                 ]
             )
-            print(f"Добавлена запись с ID {content_metadata.p_content_uuid} в коллекцию {content_metadata.p_bucket_uuid}")
+            logger.info(f"Добавлена запись с ID {content_metadata.p_content_uuid} в коллекцию {content_metadata.p_bucket_uuid}.")
 
         except Exception as e:
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details(f"Ошибка при добавлении записи: {e}")
+            logger.info(f"Ошибка при добавлении записи: {e}.")
             return pb2.Empty()
 
         return pb2.Empty()
