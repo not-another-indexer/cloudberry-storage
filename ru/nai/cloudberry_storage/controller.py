@@ -243,7 +243,7 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
             using=vector_name,
             limit=top_k,
         )
-        return result
+        return result.points
 
     def combine_results(self, one_peace_results, description_results, ocr_results, parameters, count):
         combined_results = {}
