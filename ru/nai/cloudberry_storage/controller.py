@@ -226,8 +226,8 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
         response = pb2.FindResponse()
         for entry in combined_results:
             response.p_entries.add(
-                content_uuid=entry['content_uuid'],
-                metrics=entry['metrics']
+                p_content_uuid=entry['content_uuid'],
+                p_metrics=entry['metrics']
             )
 
         if not response.p_entries:
