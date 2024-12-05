@@ -301,7 +301,7 @@ class CloudberryStorageService(pb2_grpc.CloudberryStorageServicer):
 
 def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-    pb2_grpc.add_CloudberryStorageServicer_to_server(CloudberryStorageServicer(), server)
+    pb2_grpc.add_CloudberryStorageServicer_to_server(CloudberryStorageService(), server)
     server.add_insecure_port('[::]:50051')
     print("Server started on port 50051")
     server.start()
