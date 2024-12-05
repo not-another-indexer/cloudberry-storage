@@ -76,15 +76,15 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
 
     def init_sbert_model(self):
         logger.info("Загрузка модели SBERT")
-        model_sbert = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2', device=torch.device('cpu'))
+        model_sbert = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2', device='cpu')
         logger.info("SBERT был успешно загружен")
         return model_sbert
 
     def InitBucket(self, request, context):
-        bucket_uuid = request.bucket_uuid
+        p_bucket_uuid = request.p_bucket_uuid
 
         try:
-            self.create_collection_if_not_exists(bucket_uuid)
+            self.create_collection_if_not_exists(p_bucket_uuid)
         except Exception as e:
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details(f"Error creating Qdrant collection: {e}")
@@ -109,17 +109,17 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
             print(f"Создана коллекция {collection_name} с несколькими векторами.")
 
     def DestroyBucket(self, request, context):
-        bucket_uuid = request.bucket_uuid
+        p_bucket_uuid = request.p_bucket_uuid
         try:
-            self.client.get_collection(bucket_uuid)
+            self.client.get_collection(p_bucket_uuid)
         except UnexpectedResponse:
             context.set_code(grpc.StatusCode.NOT_FOUND)
-            context.set_details(f"Bucket collection {bucket_uuid} not found.")
+            context.set_details(f"Bucket collection {p_bucket_uuid} not found.")
             return pb2.Empty()
 
         try:
-            self.client.delete_collection(bucket_uuid)
-            print(f"Deleted collection for bucket: {bucket_uuid}")
+            self.client.delete_collection(p_bucket_uuid)
+            print(f"Deleted collection for bucket: {p_bucket_uuid}")
         except Exception as e:
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details(f"Error deleting Qdrant collection: {e}")
@@ -134,8 +134,8 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
         for req in request_iterator:
             if req.WhichOneof("payload") == "metadata":
                 content_metadata = req.metadata
-                print(f"Получены метаданные: {content_metadata.content_uuid}, {content_metadata.bucket_uuid}, "
-                      f"{content_metadata.extension}, {content_metadata.description}")
+                print(f"Получены метаданные: {content_metadata.p_content_uuid}, {content_metadata.p_bucket_uuid}, "
+                      f"{content_metadata.p_extension}, {content_metadata.p_description}")
             elif req.WhichOneof("payload") == "chunk_data":
                 if content_metadata is None:
                     context.set_details("Метаданные должны быть переданы до передачи данных чанков.")
@@ -164,7 +164,7 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
 
             # Векторизация текстового описания
             description_vector = self.text_model.encode(
-                content_metadata.description) if content_metadata.description else None
+                content_metadata.p_description) if content_metadata.p_description else None
 
             # Создание записи для Qdrant
             vectors = {
@@ -174,19 +174,19 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
                 "ocr_text_sbert_embedding": ocr_vector
             }
             self.client.upsert(
-                collection_name=content_metadata.bucket_uuid,
+                collection_name=content_metadata.p_bucket_uuid,
                 points=[
                     PointStruct(
-                        id=content_metadata.content_uuid,
+                        id=content_metadata.p_content_uuid,
                         vector=vectors,
                         payload={
-                            "description": content_metadata.description or "",
+                            "description": content_metadata.p_description or "",
                             "ocr_text": ocr_text or ""
                         }
                     )
                 ]
             )
-            print(f"Добавлена запись с ID {content_metadata.content_uuid} в коллекцию {content_metadata.bucket_uuid}")
+            print(f"Добавлена запись с ID {content_metadata.p_content_uuid} в коллекцию {content_metadata.p_bucket_uuid}")
 
         except Exception as e:
             context.set_code(grpc.StatusCode.INTERNAL)
@@ -203,8 +203,8 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
         return embedding
 
     def RemoveEntry(self, request, context):
-        bucket_uuid = request.bucket_uuid
-        content_uuid = request.content_uuid
+        bucket_uuid = request.p_bucket_uuid
+        content_uuid = request.p_content_uuid
         if bucket_uuid in self.buckets and content_uuid in self.buckets[bucket_uuid]:
             del self.buckets[bucket_uuid][content_uuid]
             print(f"Removed entry {content_uuid} from bucket {bucket_uuid}")
@@ -215,10 +215,10 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
             return pb2.Empty()
 
     def Find(self, request, context):
-        query = request.query
-        bucket_uuid = request.bucket_uuid
-        parameters = request.parameters
-        count = request.count or 10
+        query = request.p_query
+        bucket_uuid = request.p_bucket_uuid
+        parameters = request.p_parameters
+        count = request.p_count or 10
 
         one_peace_vector = self.one_peace_model(query)
         sbert_vector = self.text_model(query)
@@ -231,15 +231,15 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
 
         response = pb2.FindResponse()
         for entry in combined_results:
-            response.entries.add(
+            response.p_entries.add(
                 content_uuid=entry['content_uuid'],
                 metrics=entry['metrics']
             )
 
-        if not response.entries:
+        if not response.p_entries:
             print(f"No results found for query: {query}")
         else:
-            print(f"Found {len(response.entries)} result(s) for query: {query}")
+            print(f"Found {len(response.p_entries)} result(s) for query: {query}")
         return response
 
     def search_in_qdrant(self, collection_name, query_vector, vector_name, top_k=10):
