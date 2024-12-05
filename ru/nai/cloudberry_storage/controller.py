@@ -249,16 +249,16 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
         combined_results = {}
 
         for res in one_peace_results:
-            uuid = res['id']
-            score = res['score']
+            uuid = res.id
+            score = res.score
             combined_results[uuid] = {
                 'content_uuid': uuid,
                 'metrics': [{'parameter': 'SEMANTIC_ONE_PEACE_SIMILARITY', 'value': score}]
             }
 
         for res in description_results:
-            uuid = res['id']
-            score = res['score']
+            uuid = res.id
+            score = res.score
             if uuid in combined_results:
                 combined_results[uuid]['metrics'].append(
                     {'parameter': 'TEXTUAL_DESCRIPTION_SIMILARITY', 'value': score})
@@ -269,8 +269,8 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
                 }
 
         for res in ocr_results:
-            uuid = res['id']
-            score = res['score']
+            uuid = res.id
+            score = res.score
             if uuid in combined_results:
                 combined_results[uuid]['metrics'].append({'parameter': 'RECOGNIZED_TEXT_SIMILARITY', 'value': score})
             else:
