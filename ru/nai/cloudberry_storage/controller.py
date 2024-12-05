@@ -148,12 +148,12 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
             # image_vector = np.random.rand(512).tolist()
             # Получение OCR текста и вектора
             ocr_text = pytesseract.image_to_string(image, lang='eng+rus').strip()
-            ocr_vector = self.text_model.encode(ocr_text).cpu().numpy().tolist() if ocr_text else None
+            ocr_vector = self.text_model.encode(ocr_text).tolist() if ocr_text else None
             # ocr_vector = np.random.rand(768).tolist()
             logger.info(f"Распознанный текст OCR: {ocr_text}.")
 
             # Векторизация текстового описания
-            description_vector = self.text_model.encode(description).cpu().numpy().tolist() if description else None
+            description_vector = self.text_model.encode(description).tolist() if description else None
             # description_vector = np.random.rand(768).tolist()
             # Создание записи для Qdrant
             vectors = {
@@ -215,7 +215,7 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
         with torch.no_grad():
             one_peace_vector = self.one_peace_model.extract_text_features(text_tokens).cpu().numpy().tolist()
         # one_peace_vector = np.random.rand(512).tolist()
-        sbert_vector = self.text_model.encode(query).cpu().numpy().tolist()
+        sbert_vector = self.text_model.encode(query).tolist()
         # sbert_vector = np.random.rand(768).tolist()
 
         one_peace_results = self.search_in_qdrant(bucket_uuid, one_peace_vector, "one_peace_embedding", count)
