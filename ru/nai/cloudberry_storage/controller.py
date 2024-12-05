@@ -252,8 +252,8 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
             uuid = res.id
             score = res.score
             combined_results[uuid] = {
-                'content_uuid': uuid,
-                'metrics': [{'parameter': 'SEMANTIC_ONE_PEACE_SIMILARITY', 'value': score}]
+                'p_content_uuid': uuid,
+                'p_metrics': [{'p_parameter': 'SEMANTIC_ONE_PEACE_SIMILARITY', 'p_value': score}]
             }
 
         for res in description_results:
@@ -261,33 +261,33 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
             score = res.score
             if uuid in combined_results:
                 combined_results[uuid]['metrics'].append(
-                    {'parameter': 'TEXTUAL_DESCRIPTION_SIMILARITY', 'value': score})
+                    {'p_parameter': 'TEXTUAL_DESCRIPTION_SIMILARITY', 'p_value': score})
             else:
                 combined_results[uuid] = {
-                    'content_uuid': uuid,
-                    'metrics': [{'parameter': 'TEXTUAL_DESCRIPTION_SIMILARITY', 'value': score}]
+                    'p_content_uuid': uuid,
+                    'p_metrics': [{'p_parameter': 'TEXTUAL_DESCRIPTION_SIMILARITY', 'p_value': score}]
                 }
 
         for res in ocr_results:
             uuid = res.id
             score = res.score
             if uuid in combined_results:
-                combined_results[uuid]['metrics'].append({'parameter': 'RECOGNIZED_TEXT_SIMILARITY', 'value': score})
+                combined_results[uuid]['p_metrics'].append({'p_parameter': 'RECOGNIZED_TEXT_SIMILARITY', 'p_value': score})
             else:
                 combined_results[uuid] = {
-                    'content_uuid': uuid,
-                    'metrics': [{'parameter': 'RECOGNIZED_TEXT_SIMILARITY', 'value': score}]
+                    'p_content_uuid': uuid,
+                    'p_metrics': [{'p_parameter': 'RECOGNIZED_TEXT_SIMILARITY', 'p_value': score}]
                 }
 
         for param in parameters:
             if param.parameter == pb2.Parameter.SEMANTIC_ONE_PEACE_SIMILARITY:
                 for entry in combined_results.values():
-                    entry['metrics'][0]['value'] *= param.value
+                    entry['p_metrics'][0]['p_value'] *= param.value
             elif param.parameter == pb2.Parameter.TEXTUAL_DESCRIPTION_SIMILARITY:
                 for entry in combined_results.values():
-                    entry['metrics'][1]['value'] *= param.value
+                    entry['p_metrics'][1]['p_value'] *= param.value
 
-        sorted_results = sorted(combined_results.values(), key=lambda x: sum(m['value'] for m in x['metrics']),
+        sorted_results = sorted(combined_results.values(), key=lambda x: sum(m['p_value'] for m in x['p_metrics']),
                                 reverse=True)
 
         return sorted_results[:count]
