@@ -16,8 +16,8 @@ from qdrant_client.http.models import Distance, VectorParams
 from qdrant_client.http.exceptions import UnexpectedResponse
 
 # sys.path.append('generated')
-from generated import cloudberry_storage_pb2_grpc as pb2_grpc
-from generated import cloudberry_storage_pb2 as pb2
+import generated.cloudberry_storage_pb2_grpc as pb2_grpc
+import generated.cloudberry_storage_pb2 as pb2
 
 ONE_PEACE_GITHUB_REPO_DIR_PATH = 'ONE-PEACE/'
 ONE_PEACE_MODEL_PATH = '/home/meno/models/one-peace.pt'
@@ -35,7 +35,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-class CloudberryStorageService(pb2_grpc.CloudberryStorageServicer):
+class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
     def __init__(self):
         self.client = QdrantClient("http://localhost:6333")
         self.one_peace_model = self.init_one_peace_model()
@@ -301,7 +301,7 @@ class CloudberryStorageService(pb2_grpc.CloudberryStorageServicer):
 
 def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-    pb2_grpc.add_CloudberryStorageServicer_to_server(CloudberryStorageService(), server)
+    pb2_grpc.add_CloudberryStorageServicer_to_server(CloudberryStorageServicer(), server)
     server.add_insecure_port('[::]:50051')
     print("Server started on port 50051")
     server.start()

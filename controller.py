@@ -8,7 +8,7 @@ import logging
 import base64
 
 import cloudberry_storage_pb2
-from ru.nai.cloudberry_storage import cloudberry_storage_pb2_grpc
+import cloudberry_storage_pb2_grpc
 
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s',
