@@ -106,8 +106,8 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
                 vectors_config={
                     "one_peace_embedding": models.VectorParams(size=512, distance=Distance.COSINE),
                     "description_sbert_embedding": models.VectorParams(size=768, distance=Distance.COSINE),
-                    "faces_text_sbert_embedding": models.VectorParams(size=128, distance=Distance.COSINE),
-                    "ocr_text_sbert_embedding": models.VectorParams(size=256, distance=Distance.COSINE),
+                    "faces_text_sbert_embedding": models.VectorParams(size=768, distance=Distance.COSINE),
+                    "ocr_text_sbert_embedding": models.VectorParams(size=768, distance=Distance.COSINE),
                 }
             )
             logger.info(f"Создана новая коллекция {collection_name} с несколькими векторами.")
@@ -149,7 +149,7 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
             # Получение OCR текста и вектора
             ocr_text = pytesseract.image_to_string(image, lang='eng+rus').strip()
             # ocr_vector = self.text_model.encode(ocr_text) if ocr_text else None
-            ocr_vector = np.random.rand(256).tolist()
+            ocr_vector = np.random.rand(768).tolist()
             logger.info(f"Распознанный текст OCR: {ocr_text}.")
 
             # Векторизация текстового описания
@@ -160,7 +160,7 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
             vectors = {
                 "one_peace_embedding": image_vector,
                 "description_sbert_embedding": description_vector,
-                "faces_text_sbert_embedding": np.random.rand(128).tolist(),
+                "faces_text_sbert_embedding": np.random.rand(768).tolist(),
                 "ocr_text_sbert_embedding": ocr_vector
             }
             self.client.upsert(
@@ -206,13 +206,16 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
             return pb2.Empty()
 
     def Find(self, request, context):
+        logger.info(f"Search request with query: {request.p_query}.")
         query = request.p_query
         bucket_uuid = request.p_bucket_uuid
         parameters = request.p_parameters
         count = request.p_count or 10
 
-        one_peace_vector = self.one_peace_model(query)
-        sbert_vector = self.text_model(query)
+        # one_peace_vector = self.one_peace_model(query)
+        one_peace_vector = np.random.rand(512).tolist()
+        # sbert_vector = self.text_model(query)
+        sbert_vector = np.random.rand(768).tolist()
 
         one_peace_results = self.search_in_qdrant(bucket_uuid, one_peace_vector, "one_peace_embedding", count)
         description_results = self.search_in_qdrant(bucket_uuid, sbert_vector, "description_sbert_embedding", count)
@@ -228,9 +231,9 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
             )
 
         if not response.p_entries:
-            print(f"No results found for query: {query}")
+            logger.info(f"No results found for query: {query}")
         else:
-            print(f"Found {len(response.p_entries)} result(s) for query: {query}")
+            logger.info(f"Found {len(response.p_entries)} result(s) for query: {query}")
         return response
 
     def search_in_qdrant(self, collection_name, query_vector, vector_name, top_k=10):
