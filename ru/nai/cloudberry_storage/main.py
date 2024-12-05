@@ -16,9 +16,9 @@ def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     pb2_grpc.add_CloudberryStorageServicer_to_server(CloudberryStorageServicer(), server)
 
-    server.add_insecure_port('[::]:50051')
+    server.add_insecure_port('[::]:8002')
     server.start()
-    print("Server is running on port 50051...")
+    print("Server is running on port 8002...")
 
     try:
         while True:
