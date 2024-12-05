@@ -145,22 +145,22 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
             content_data = request.p_data
             image = Image.open(BytesIO(content_data)).convert("RGB")
             # image_vector = self.vectorize_image(image)
-            image_vector = [np.random.rand(512).tolist() for _ in range(3)]
+            image_vector = np.random.rand(512).tolist()
             # Получение OCR текста и вектора
             ocr_text = pytesseract.image_to_string(image, lang='eng+rus').strip()
             # ocr_vector = self.text_model.encode(ocr_text) if ocr_text else None
-            ocr_vector = [np.random.rand(256).tolist() for _ in range(3)]
+            ocr_vector = np.random.rand(256).tolist()
             logger.info(f"Распознанный текст OCR: {ocr_text}.")
 
             # Векторизация текстового описания
             # description_vector = self.text_model.encode(
             #     content_metadata.p_description) if content_metadata.p_description else None
-            description_vector = [np.random.rand(768).tolist() for _ in range(3)]
+            description_vector = np.random.rand(768).tolist()
             # Создание записи для Qdrant
             vectors = {
                 "one_peace_embedding": image_vector,
                 "description_sbert_embedding": description_vector,
-                "faces_text_sbert_embedding": [np.random.rand(128).tolist() for _ in range(3)],
+                "faces_text_sbert_embedding": np.random.rand(128).tolist(),
                 "ocr_text_sbert_embedding": ocr_vector
             }
             self.client.upsert(
