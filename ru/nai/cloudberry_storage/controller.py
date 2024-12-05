@@ -145,7 +145,7 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
             content_data = request.p_data
             image = Image.open(BytesIO(content_data)).convert("RGB")
             # image_vector = self.vectorize_image(image)
-            image_vector = np.zeros(512)
+            image_vector = np.zeros(512).tolist()
             # Получение OCR текста и вектора
             ocr_text = pytesseract.image_to_string(image, lang='eng+rus').strip()
             # ocr_vector = self.text_model.encode(ocr_text) if ocr_text else None
