@@ -104,7 +104,7 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
             self.client.create_collection(
                 collection_name=collection_name,
                 vectors_config={
-                    "one_peace_embedding": models.VectorParams(size=512, distance=Distance.COSINE),
+                    "one_peace_embedding": models.VectorParams(size=1536, distance=Distance.COSINE),
                     "description_sbert_embedding": models.VectorParams(size=768, distance=Distance.COSINE),
                     "faces_text_sbert_embedding": models.VectorParams(size=768, distance=Distance.COSINE),
                     "ocr_text_sbert_embedding": models.VectorParams(size=768, distance=Distance.COSINE),
