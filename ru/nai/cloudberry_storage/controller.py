@@ -226,8 +226,8 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
         response = pb2.FindResponse()
         for entry in combined_results:
             response.p_entries.add(
-                p_content_uuid=entry['content_uuid'],
-                p_metrics=entry['metrics']
+                p_content_uuid=entry['p_content_uuid'],
+                p_metrics=entry['p_metrics']
             )
 
         if not response.p_entries:
@@ -260,7 +260,7 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
             uuid = res.id
             score = res.score
             if uuid in combined_results:
-                combined_results[uuid]['metrics'].append(
+                combined_results[uuid]['p_metrics'].append(
                     {'p_parameter': 'TEXTUAL_DESCRIPTION_SIMILARITY', 'p_value': score})
             else:
                 combined_results[uuid] = {
