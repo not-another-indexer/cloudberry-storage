@@ -269,7 +269,7 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
 
         text_tokens = self.one_peace_model.process_text([query])
         with torch.no_grad():
-            one_peace_vector = self.one_peace_model.extract_text_features(text_tokens).cpu().numpy().tolist()
+            one_peace_vector = self.one_peace_model.extract_text_features(text_tokens).cpu().numpy().flatten().tolist()
         # one_peace_vector = np.random.rand(ONE_PEACE_VECTOR_SIZE).tolist()
         sbert_vector = self.text_model.encode(query).tolist()
         # sbert_vector = np.random.rand(SBERT_VECTOR_SIZE).tolist()
