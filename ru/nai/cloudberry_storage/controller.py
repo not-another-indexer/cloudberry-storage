@@ -106,7 +106,8 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
                 collection_name=collection_name,
                 vectors_config={
                     "one_peace_embedding": models.VectorParams(size=ONE_PEACE_VECTOR_SIZE, distance=Distance.COSINE),
-                    "description_sbert_embedding": models.VectorParams(size=SBERT_VECTOR_SIZE, distance=Distance.COSINE),
+                    "description_sbert_embedding": models.VectorParams(size=SBERT_VECTOR_SIZE,
+                                                                       distance=Distance.COSINE),
                     "faces_text_sbert_embedding": models.VectorParams(size=SBERT_VECTOR_SIZE, distance=Distance.COSINE),
                     "ocr_text_sbert_embedding": models.VectorParams(size=SBERT_VECTOR_SIZE, distance=Distance.COSINE),
                 }
@@ -159,7 +160,8 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
             logger.info(f"OCR текст: {ocr_text}, размер OCR вектора: {len(ocr_vector) if ocr_vector else 'None'}")
 
             # Векторизация текстового описания
-            description_vector = self.text_model.encode(description).tolist() if description else np.zeros(SBERT_VECTOR_SIZE).tolist()
+            description_vector = self.text_model.encode(description).tolist() if description else np.zeros(
+                SBERT_VECTOR_SIZE).tolist()
             # description_vector = np.random.rand(SBERT_VECTOR_SIZE).tolist()
             logger.info(f"Размер вектора описания: {len(description_vector) if description_vector else 'None'}")
 
@@ -304,50 +306,37 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
 
     def combine_results(self, one_peace_results, description_results, ocr_results, parameters, count):
         combined_results = {}
-        logger.info(f"One-peace results: {one_peace_results}")
-        for res in one_peace_results:
-            uuid = res.id
-            score = res.score
-            combined_results[uuid] = {
-                'p_content_uuid': uuid,
-                'p_metrics': [{'p_parameter': 'SEMANTIC_ONE_PEACE_SIMILARITY', 'p_value': score}]
-            }
 
-        for res in description_results:
-            uuid = res.id
-            score = res.score
-            if uuid in combined_results:
-                combined_results[uuid]['p_metrics'].append(
-                    {'p_parameter': 'TEXTUAL_DESCRIPTION_SIMILARITY', 'p_value': score})
-            else:
-                combined_results[uuid] = {
-                    'p_content_uuid': uuid,
-                    'p_metrics': [{'p_parameter': 'TEXTUAL_DESCRIPTION_SIMILARITY', 'p_value': score}]
-                }
+        for source_results, parameter_name in [
+            (one_peace_results, 'SEMANTIC_ONE_PEACE_SIMILARITY'),
+            (description_results, 'TEXTUAL_DESCRIPTION_SIMILARITY'),
+            (ocr_results, 'RECOGNIZED_TEXT_SIMILARITY'),
+        ]:
+            for res in source_results:
+                uuid = res.id
+                score = res.score
+                if uuid not in combined_results:
+                    combined_results[uuid] = {
+                        'p_content_uuid': uuid,
+                        'p_metrics': [],
+                    }
+                combined_results[uuid]['p_metrics'].append({'p_parameter': parameter_name, 'p_value': score})
 
-        for res in ocr_results:
-            uuid = res.id
-            score = res.score
-            if uuid in combined_results:
-                combined_results[uuid]['p_metrics'].append(
-                    {'p_parameter': 'RECOGNIZED_TEXT_SIMILARITY', 'p_value': score})
-            else:
-                combined_results[uuid] = {
-                    'p_content_uuid': uuid,
-                    'p_metrics': [{'p_parameter': 'RECOGNIZED_TEXT_SIMILARITY', 'p_value': score}]
-                }
+        # Применяем коэффициенты к каждому параметру
+        parameter_weights = {param.parameter: param.value for param in parameters}
+        for entry in combined_results.values():
+            # Применяем веса к каждой метрике
+            for metric in entry['p_metrics']:
+                metric['p_value'] *= parameter_weights.get(metric['p_parameter'], 0)
 
-        for param in parameters:
-            if param.parameter == pb2.Parameter.SEMANTIC_ONE_PEACE_SIMILARITY:
-                for entry in combined_results.values():
-                    entry['p_metrics'][0]['p_value'] *= param.value
-            elif param.parameter == pb2.Parameter.TEXTUAL_DESCRIPTION_SIMILARITY:
-                for entry in combined_results.values():
-                    entry['p_metrics'][1]['p_value'] *= param.value
+        # Ранжируем результаты по итоговой сумме метрик
+        sorted_results = sorted(
+            combined_results.values(),
+            key=lambda x: sum(m['p_value'] for m in x['p_metrics']),
+            reverse=True
+        )
 
-        sorted_results = sorted(combined_results.values(), key=lambda x: sum(m['p_value'] for m in x['p_metrics']),
-                                reverse=True)
-
+        # Возвращаем только топ `count` результатов
         return sorted_results[:count]
 
 
