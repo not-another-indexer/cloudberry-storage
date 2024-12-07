@@ -323,7 +323,7 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
                 combined_results[uuid]['p_metrics'].append({'p_parameter': parameter_name, 'p_value': score})
 
         # Применяем коэффициенты к каждому параметру
-        parameter_weights = {param.parameter: param.value for param in parameters}
+        parameter_weights = {param.p_parameter: param.p_value for param in parameters}
         for entry in combined_results.values():
             # Применяем веса к каждой метрике
             for metric in entry['p_metrics']:
