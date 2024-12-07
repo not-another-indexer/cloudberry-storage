@@ -24,6 +24,7 @@ ONE_PEACE_GITHUB_REPO_DIR_PATH = 'ONE-PEACE/'
 ONE_PEACE_MODEL_PATH = '/home/meno/models/one-peace.pt'
 PYTESSERACT_PATH = r'/usr/bin/tesseract'
 ONE_PEACE_VECTOR_SIZE = 1536
+SBERT_VECTOR_SIZE = 384
 
 logging.basicConfig(
     level=logging.INFO,
@@ -106,9 +107,9 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
                 collection_name=collection_name,
                 vectors_config={
                     "one_peace_embedding": models.VectorParams(size=ONE_PEACE_VECTOR_SIZE, distance=Distance.COSINE),
-                    "description_sbert_embedding": models.VectorParams(size=768, distance=Distance.COSINE),
-                    "faces_text_sbert_embedding": models.VectorParams(size=768, distance=Distance.COSINE),
-                    "ocr_text_sbert_embedding": models.VectorParams(size=768, distance=Distance.COSINE),
+                    "description_sbert_embedding": models.VectorParams(size=SBERT_VECTOR_SIZE, distance=Distance.COSINE),
+                    "faces_text_sbert_embedding": models.VectorParams(size=SBERT_VECTOR_SIZE, distance=Distance.COSINE),
+                    "ocr_text_sbert_embedding": models.VectorParams(size=SBERT_VECTOR_SIZE, distance=Distance.COSINE),
                 }
             )
             logger.info(f"Создана новая коллекция {collection_name} с несколькими векторами.")
@@ -154,19 +155,19 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
             # Получение OCR текста и вектора
             ocr_text = pytesseract.image_to_string(image, lang='eng+rus').strip()
             ocr_vector = self.text_model.encode(ocr_text).tolist() if ocr_text else None
-            # ocr_vector = np.random.rand(768).tolist()
+            # ocr_vector = np.random.rand(SBERT_VECTOR_SIZE).tolist()
             logger.info(f"OCR текст: {ocr_text}, размер OCR вектора: {len(ocr_vector) if ocr_vector else 'None'}")
 
             # Векторизация текстового описания
             description_vector = self.text_model.encode(description).tolist() if description else None
-            # description_vector = np.random.rand(768).tolist()
+            # description_vector = np.random.rand(SBERT_VECTOR_SIZE).tolist()
             logger.info(f"Размер вектора описания: {len(description_vector) if description_vector else 'None'}")
 
             # Создание записи для Qdrant
             vectors = {
                 "one_peace_embedding": image_vector,
                 "description_sbert_embedding": description_vector,
-                "faces_text_sbert_embedding": np.random.rand(768).tolist(),
+                "faces_text_sbert_embedding": np.random.rand(SBERT_VECTOR_SIZE).tolist(),
                 "ocr_text_sbert_embedding": ocr_vector
             }
 
@@ -200,9 +201,9 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
     #     logger.info("Проверка размеров векторов.")
     #     expected_sizes = {
     #         "one_peace_embedding": ONE_PEACE_VECTOR_SIZE,
-    #         "description_sbert_embedding": 768,
-    #         "faces_text_sbert_embedding": 768,
-    #         "ocr_text_sbert_embedding": 768
+    #         "description_sbert_embedding": SBERT_VECTOR_SIZE,
+    #         "faces_text_sbert_embedding": SBERT_VECTOR_SIZE,
+    #         "ocr_text_sbert_embedding": SBERT_VECTOR_SIZE
     #     }
     #     for name, vector in vectors.items():
     #         if vector is not None and len(vector) != expected_sizes[name]:
@@ -271,7 +272,7 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
             one_peace_vector = self.one_peace_model.extract_text_features(text_tokens).cpu().numpy().tolist()
         # one_peace_vector = np.random.rand(512).tolist()
         sbert_vector = self.text_model.encode(query).tolist()
-        # sbert_vector = np.random.rand(768).tolist()
+        # sbert_vector = np.random.rand(SBERT_VECTOR_SIZE).tolist()
 
         one_peace_results = self.search_in_qdrant(bucket_uuid, one_peace_vector, "one_peace_embedding", count)
         description_results = self.search_in_qdrant(bucket_uuid, sbert_vector, "description_sbert_embedding", count)
