@@ -313,21 +313,21 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
         logger.info(f"Description similarity results: {description_results}")
         logger.info(f"Ocr similarity results: {ocr_results}")
 
-        def normalize_results(results):
-            """Нормирует список результатов по значениям score."""
-            if not results:
-                return results
-            scores = [res.score for res in results]
-            min_score = min(scores)
-            max_score = max(scores)
-            if max_score == min_score:
-                # Если все значения одинаковые, установить все нормализованные значения в 0
-                return [type(res)(id=res.id, score=1) for res in results]
-            return [type(res)(id=res.id, score=(res.score - min_score) / (max_score - min_score)) for res in results]
+        # def normalize_results(results):
+        #     """Нормирует список результатов по значениям score."""
+        #     if not results:
+        #         return results
+        #     scores = [res.score for res in results]
+        #     min_score = min(scores)
+        #     max_score = max(scores)
+        #     if max_score == min_score:
+        #         # Если все значения одинаковые, установить все нормализованные значения в 0
+        #         return [type(res)(id=res.id, score=1) for res in results]
+        #     return [type(res)(id=res.id, score=(res.score - min_score) / (max_score - min_score)) for res in results]
 
-        one_peace_results = normalize_results(one_peace_results)
-        description_results = normalize_results(description_results)
-        ocr_results = normalize_results(ocr_results)
+        # one_peace_results = normalize_results(one_peace_results)
+        # description_results = normalize_results(description_results)
+        # ocr_results = normalize_results(ocr_results)
 
         for source_results, parameter_name in [
             (one_peace_results, 'SEMANTIC_ONE_PEACE_SIMILARITY'),
