@@ -170,7 +170,7 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
                 "ocr_text_sbert_embedding": ocr_vector
             }
 
-            self.validate_vector_sizes(vectors)
+            # self.validate_vector_sizes(vectors)
 
             self.client.upsert(
                 collection_name=bucket_uuid,
@@ -195,19 +195,19 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
 
         return pb2.Empty()
 
-    def validate_vector_sizes(self, vectors: dict):
-        """Проверка размеров векторов."""
-        logger.info("Проверка размеров векторов.")
-        expected_sizes = {
-            "one_peace_embedding": 1536,
-            "description_sbert_embedding": 768,
-            "faces_text_sbert_embedding": 768,
-            "ocr_text_sbert_embedding": 768
-        }
-        for name, vector in vectors.items():
-            if vector is not None and len(vector) != expected_sizes[name]:
-                raise ValueError(
-                    f"Размер вектора '{name}' ({len(vector)}) не соответствует ожидаемому ({expected_sizes[name]})")
+    # def validate_vector_sizes(self, vectors: dict):
+    #     """Проверка размеров векторов."""
+    #     logger.info("Проверка размеров векторов.")
+    #     expected_sizes = {
+    #         "one_peace_embedding": ONE_PEACE_VECTOR_SIZE,
+    #         "description_sbert_embedding": 768,
+    #         "faces_text_sbert_embedding": 768,
+    #         "ocr_text_sbert_embedding": 768
+    #     }
+    #     for name, vector in vectors.items():
+    #         if vector is not None and len(vector) != expected_sizes[name]:
+    #             raise ValueError(
+    #                 f"Размер вектора '{name}' ({len(vector)}) не соответствует ожидаемому ({expected_sizes[name]})")
 
     def vectorize_image(self, image: Image.Image):
         """Векторизация изображения с помощью модели."""
@@ -229,16 +229,35 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
             raise
 
     def RemoveEntry(self, request, context):
+        """Удаление записи из Qdrant."""
         bucket_uuid = request.p_bucket_uuid
         content_uuid = request.p_content_uuid
-        if bucket_uuid in self.buckets and content_uuid in self.buckets[bucket_uuid]:
-            del self.buckets[bucket_uuid][content_uuid]
-            print(f"Removed entry {content_uuid} from bucket {bucket_uuid}")
-            return pb2.Empty()
-        else:
+
+        logger.info(f"Запрос на удаление записи с ID {content_uuid} из коллекции {bucket_uuid}.")
+        try:
+            # Проверка существования коллекции
+            self.client.get_collection(bucket_uuid)
+            logger.info(f"Коллекция {bucket_uuid} найдена.")
+        except UnexpectedResponse:
+            logger.error(f"Коллекция {bucket_uuid} не найдена.")
             context.set_code(grpc.StatusCode.NOT_FOUND)
-            context.set_details(f"Entry {content_uuid} in bucket {bucket_uuid} not found.")
+            context.set_details(f"Коллекция с bucket_uuid {bucket_uuid} не найдена.")
             return pb2.Empty()
+
+        try:
+            # Удаление точки по её ID
+            self.client.delete(
+                collection_name=bucket_uuid,
+                points_selector=models.PointIdsList(point_ids=[content_uuid])
+            )
+            logger.info(f"Запись с ID {content_uuid} успешно удалена из коллекции {bucket_uuid}.")
+        except Exception as e:
+            logger.error(f"Ошибка при удалении записи: {e}", exc_info=True)
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details(f"Ошибка при удалении записи: {e}")
+            return pb2.Empty()
+
+        return pb2.Empty()
 
     def Find(self, request, context):
         logger.info(f"Search request with query: {request.p_query}.")
