@@ -18,6 +18,7 @@ import numpy as np
 # sys.path.append('generated')
 import cloudberry_storage_pb2_grpc as pb2_grpc
 import cloudberry_storage_pb2 as pb2
+from cloudberry_storage_pb2 import Coefficient
 
 ONE_PEACE_GITHUB_REPO_DIR_PATH = 'ONE-PEACE/'
 ONE_PEACE_MODEL_PATH = '/home/meno/models/one-peace.pt'
@@ -312,6 +313,22 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
         logger.info(f"Description similarity results: {description_results}")
         logger.info(f"Ocr similarity results: {ocr_results}")
 
+        def normalize_results(results):
+            """Нормирует список результатов по значениям score."""
+            if not results:
+                return results
+            scores = [res.score for res in results]
+            min_score = min(scores)
+            max_score = max(scores)
+            if max_score == min_score:
+                # Если все значения одинаковые, установить все нормализованные значения в 0
+                return [type(res)(id=res.id, score=1) for res in results]
+            return [type(res)(id=res.id, score=(res.score - min_score) / (max_score - min_score)) for res in results]
+
+        one_peace_results = normalize_results(one_peace_results)
+        description_results = normalize_results(description_results)
+        ocr_results = normalize_results(ocr_results)
+
         for source_results, parameter_name in [
             (one_peace_results, 'SEMANTIC_ONE_PEACE_SIMILARITY'),
             (description_results, 'TEXTUAL_DESCRIPTION_SIMILARITY'),
@@ -327,8 +344,9 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
                     }
                 combined_results[uuid]['p_metrics'].append({'p_parameter': parameter_name, 'p_value': score})
 
+        logger.info(f"Combined results before reranking: {combined_results}")
         # Применяем коэффициенты к каждому параметру
-        parameter_weights = {param.p_parameter: param.p_value for param in parameters}
+        parameter_weights = {str(param.p_parameter): param.p_value for param in parameters}
         for entry in combined_results.values():
             # Применяем веса к каждой метрике
             for metric in entry['p_metrics']:
@@ -340,7 +358,6 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
             key=lambda x: sum(m['p_value'] for m in x['p_metrics']),
             reverse=True
         )
-
         logger.info(f"Sorted results: {sorted_results[:count]}")
         # Возвращаем только топ `count` результатов
         return sorted_results[:count]
