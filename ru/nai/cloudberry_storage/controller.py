@@ -350,7 +350,11 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
         for entry in combined_results.values():
             # Применяем веса к каждой метрике
             for metric in entry['p_metrics']:
-                metric['p_value'] *= parameter_weights.get(metric['p_parameter'], 0)
+                logger.info(f"Applying weight for {metric['p_parameter']}: "
+                            f"current value = {metric['p_value']}, "
+                            f"weight = {parameter_weights.get(metric['p_parameter'], 0)}")
+                weight = parameter_weights.get(metric['p_parameter'], 1)
+                metric['p_value'] *= weight
         logger.info(f"Combined results: {combined_results}")
         # Ранжируем результаты по итоговой сумме метрик
         sorted_results = sorted(
