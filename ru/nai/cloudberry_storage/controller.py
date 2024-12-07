@@ -308,9 +308,9 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
         combined_results = {}
         logger.info(f"Parameters: {parameters}")
         logger.info(f"Wanted count: {count}")
-        logger.info(f"One-peace results: {one_peace_results}")
-        logger.info(f"Description similarity results: {description_results}")
-        logger.info(f"Ocr similarity results: {ocr_results}")
+        logger.info(f"One-peace results: {one_peace_results[:count]}")
+        logger.info(f"Description similarity results: {description_results[:count]}")
+        logger.info(f"Ocr similarity results: {ocr_results[:count]}")
 
         for source_results, parameter_name in [
             (one_peace_results, 'SEMANTIC_ONE_PEACE_SIMILARITY'),
@@ -333,7 +333,7 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
             # Применяем веса к каждой метрике
             for metric in entry['p_metrics']:
                 metric['p_value'] *= parameter_weights.get(metric['p_parameter'], 0)
-
+        logger.info(f"Combined results: {combined_results[:count]}")
         # Ранжируем результаты по итоговой сумме метрик
         sorted_results = sorted(
             combined_results.values(),
@@ -341,6 +341,7 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
             reverse=True
         )
 
+        logger.info(f"Sorted results: {sorted_results[:count]}")
         # Возвращаем только топ `count` результатов
         return sorted_results[:count]
 
