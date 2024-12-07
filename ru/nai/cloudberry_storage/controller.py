@@ -26,6 +26,15 @@ PYTESSERACT_PATH = r'/usr/bin/tesseract'
 ONE_PEACE_VECTOR_SIZE = 1536
 SBERT_VECTOR_SIZE = 384
 
+PARAMETER_NAMES = {
+    0: "SEMANTIC_ONE_PEACE_SIMILARITY",
+    1: "RECOGNIZED_TEXT_SIMILARITY",
+    2: "TEXTUAL_DESCRIPTION_SIMILARITY",
+    3: "RECOGNIZED_FACE_SIMILARITY",
+    4: "RECOGNIZED_TEXT_BM25_RANK",
+    5: "TEXTUAL_DESCRIPTION_BM25_RANK",
+}
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -328,7 +337,6 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
         # one_peace_results = normalize_results(one_peace_results)
         # description_results = normalize_results(description_results)
         # ocr_results = normalize_results(ocr_results)
-
         for source_results, parameter_name in [
             (one_peace_results, 'SEMANTIC_ONE_PEACE_SIMILARITY'),
             (description_results, 'TEXTUAL_DESCRIPTION_SIMILARITY'),
@@ -346,7 +354,10 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
 
         logger.info(f"Combined results before reranking: {combined_results}")
         # Применяем коэффициенты к каждому параметру
-        parameter_weights = {str(Parameter(param.p_parameter)): param.p_value for param in parameters}
+        parameter_weights = {
+            PARAMETER_NAMES[param.p_parameter]: param.p_value
+            for param in parameters
+        }
         logger.info(f"Parameter weights: {parameter_weights}")
 
         for entry in combined_results.values():
