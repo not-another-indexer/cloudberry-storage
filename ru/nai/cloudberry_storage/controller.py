@@ -18,7 +18,7 @@ import numpy as np
 # sys.path.append('generated')
 import cloudberry_storage_pb2_grpc as pb2_grpc
 import cloudberry_storage_pb2 as pb2
-from cloudberry_storage_pb2 import Coefficient
+from cloudberry_storage_pb2 import Coefficient, Parameter
 
 ONE_PEACE_GITHUB_REPO_DIR_PATH = 'ONE-PEACE/'
 ONE_PEACE_MODEL_PATH = '/home/meno/models/one-peace.pt'
@@ -346,7 +346,7 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
 
         logger.info(f"Combined results before reranking: {combined_results}")
         # Применяем коэффициенты к каждому параметру
-        parameter_weights = {str(param.p_parameter): param.p_value for param in parameters}
+        parameter_weights = {str(Parameter(param.p_parameter)): param.p_value for param in parameters}
         logger.info(f"Parameter weights: {parameter_weights}")
 
         for entry in combined_results.values():
