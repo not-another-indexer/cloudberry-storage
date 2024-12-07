@@ -23,6 +23,7 @@ import cloudberry_storage_pb2 as pb2
 ONE_PEACE_GITHUB_REPO_DIR_PATH = 'ONE-PEACE/'
 ONE_PEACE_MODEL_PATH = '/home/meno/models/one-peace.pt'
 PYTESSERACT_PATH = r'/usr/bin/tesseract'
+ONE_PEACE_VECTOR_SIZE = 1536
 
 logging.basicConfig(
     level=logging.INFO,
@@ -82,7 +83,7 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
         return model_sbert
 
     def InitBucket(self, request, context):
-        logger.info(f"Пришёл запрос с bucket_uuid: {request.p_bucket_uuid}.")
+        logger.info(f"Пришёл запрос на инициализацию bucket с UUID: {request.p_bucket_uuid}.")
         p_bucket_uuid = request.p_bucket_uuid
 
         try:
@@ -104,7 +105,7 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
             self.client.create_collection(
                 collection_name=collection_name,
                 vectors_config={
-                    "one_peace_embedding": models.VectorParams(size=1536, distance=Distance.COSINE),
+                    "one_peace_embedding": models.VectorParams(size=ONE_PEACE_VECTOR_SIZE, distance=Distance.COSINE),
                     "description_sbert_embedding": models.VectorParams(size=768, distance=Distance.COSINE),
                     "faces_text_sbert_embedding": models.VectorParams(size=768, distance=Distance.COSINE),
                     "ocr_text_sbert_embedding": models.VectorParams(size=768, distance=Distance.COSINE),
@@ -143,18 +144,24 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
             content_uuid = request.p_metadata.p_content_uuid
             description = request.p_metadata.p_description
             content_data = request.p_data
+            logger.info(
+                f"Метаданные: bucket_uuid={bucket_uuid}, content_uuid={content_uuid}, description={description}")
+
             image = Image.open(BytesIO(content_data)).convert("RGB")
             image_vector = self.vectorize_image(image).tolist()
             # image_vector = np.random.rand(512).tolist()
+
             # Получение OCR текста и вектора
             ocr_text = pytesseract.image_to_string(image, lang='eng+rus').strip()
             ocr_vector = self.text_model.encode(ocr_text).tolist() if ocr_text else None
             # ocr_vector = np.random.rand(768).tolist()
-            logger.info(f"Распознанный текст OCR: {ocr_text}.")
+            logger.info(f"OCR текст: {ocr_text}, размер OCR вектора: {len(ocr_vector) if ocr_vector else 'None'}")
 
             # Векторизация текстового описания
             description_vector = self.text_model.encode(description).tolist() if description else None
             # description_vector = np.random.rand(768).tolist()
+            logger.info(f"Размер вектора описания: {len(description_vector) if description_vector else 'None'}")
+
             # Создание записи для Qdrant
             vectors = {
                 "one_peace_embedding": image_vector,
@@ -162,6 +169,9 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
                 "faces_text_sbert_embedding": np.random.rand(768).tolist(),
                 "ocr_text_sbert_embedding": ocr_vector
             }
+
+            self.validate_vector_sizes(vectors)
+
             self.client.upsert(
                 collection_name=bucket_uuid,
                 points=[
@@ -175,22 +185,48 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
                     )
                 ]
             )
-            logger.info(f"Добавлена запись с ID {content_uuid} в коллекцию {bucket_uuid}.")
+            logger.info(f"Запись с ID {content_uuid} добавлена в коллекцию {bucket_uuid}.")
 
         except Exception as e:
+            logger.error(f"Ошибка при добавлении записи: {e}.")
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details(f"Ошибка при добавлении записи: {e}")
-            logger.info(f"Ошибка при добавлении записи: {e}.")
             return pb2.Empty()
 
         return pb2.Empty()
 
+    def validate_vector_sizes(self, vectors: dict):
+        """Проверка размеров векторов."""
+        logger.info("Проверка размеров векторов.")
+        expected_sizes = {
+            "one_peace_embedding": 1536,
+            "description_sbert_embedding": 768,
+            "faces_text_sbert_embedding": 768,
+            "ocr_text_sbert_embedding": 768
+        }
+        for name, vector in vectors.items():
+            if vector is not None and len(vector) != expected_sizes[name]:
+                raise ValueError(
+                    f"Размер вектора '{name}' ({len(vector)}) не соответствует ожидаемому ({expected_sizes[name]})")
+
     def vectorize_image(self, image: Image.Image):
         """Векторизация изображения с помощью модели."""
-        image = self.transforms(image).unsqueeze(0).to("cpu")
-        with torch.no_grad():
-            embedding = self.one_peace_model.extract_image_features(image).cpu().numpy()
-        return embedding
+        logger.info("Начало векторизации изображения.")
+        try:
+            image_tensor = self.transforms(image).unsqueeze(0).to("cpu")
+            logger.info(f"Размер изображения после преобразований: {image_tensor.shape}")
+            with torch.no_grad():
+                embedding = self.one_peace_model.extract_image_features(image_tensor).cpu().numpy()
+            logger.info(f"Размер вектора изображения: {embedding.shape}")
+
+            expected_size = ONE_PEACE_VECTOR_SIZE
+            if embedding.shape[-1] != expected_size:
+                raise ValueError(f"Размер вектора изображения {embedding.shape[-1]}, ожидается {expected_size}")
+
+            return embedding
+        except Exception as e:
+            logger.error(f"Ошибка векторизации изображения: {e}", exc_info=True)
+            raise
 
     def RemoveEntry(self, request, context):
         bucket_uuid = request.p_bucket_uuid
@@ -273,7 +309,8 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
             uuid = res.id
             score = res.score
             if uuid in combined_results:
-                combined_results[uuid]['p_metrics'].append({'p_parameter': 'RECOGNIZED_TEXT_SIMILARITY', 'p_value': score})
+                combined_results[uuid]['p_metrics'].append(
+                    {'p_parameter': 'RECOGNIZED_TEXT_SIMILARITY', 'p_value': score})
             else:
                 combined_results[uuid] = {
                     'p_content_uuid': uuid,
