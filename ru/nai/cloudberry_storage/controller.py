@@ -14,6 +14,7 @@ from qdrant_client import QdrantClient, models
 from qdrant_client.models import Distance, VectorParams
 from qdrant_client.http.exceptions import UnexpectedResponse
 import numpy as np
+from deep_translator import GoogleTranslator
 
 # sys.path.append('generated')
 import cloudberry_storage_pb2_grpc as pb2_grpc
@@ -274,12 +275,16 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
 
     def Find(self, request, context):
         logger.info(f"Search request with query: {request.p_query}.")
+        def translate_to_english(text):
+            translator = GoogleTranslator(source='ru', target='en')
+            translated_text = translator.translate(text)
+            return translated_text
         query = request.p_query
         bucket_uuid = request.p_bucket_uuid
         parameters = request.p_parameters
         count = request.p_count or 10
 
-        text_tokens = self.one_peace_model.process_text([query])
+        text_tokens = self.one_peace_model.process_text([translate_to_english(query)])
         with torch.no_grad():
             one_peace_vector = self.one_peace_model.extract_text_features(text_tokens).cpu().numpy().flatten().tolist()
         # one_peace_vector = np.random.rand(ONE_PEACE_VECTOR_SIZE).tolist()
