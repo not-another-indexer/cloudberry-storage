@@ -154,12 +154,12 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
 
             # Получение OCR текста и вектора
             ocr_text = pytesseract.image_to_string(image, lang='eng+rus').strip()
-            ocr_vector = self.text_model.encode(ocr_text).tolist() if ocr_text else None
+            ocr_vector = self.text_model.encode(ocr_text).tolist() if ocr_text else np.zeros(SBERT_VECTOR_SIZE).tolist()
             # ocr_vector = np.random.rand(SBERT_VECTOR_SIZE).tolist()
             logger.info(f"OCR текст: {ocr_text}, размер OCR вектора: {len(ocr_vector) if ocr_vector else 'None'}")
 
             # Векторизация текстового описания
-            description_vector = self.text_model.encode(description).tolist() if description else None
+            description_vector = self.text_model.encode(description).tolist() if description else np.zeros(SBERT_VECTOR_SIZE).tolist()
             # description_vector = np.random.rand(SBERT_VECTOR_SIZE).tolist()
             logger.info(f"Размер вектора описания: {len(description_vector) if description_vector else 'None'}")
 
@@ -167,7 +167,7 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
             vectors = {
                 "one_peace_embedding": image_vector,
                 "description_sbert_embedding": description_vector,
-                "faces_text_sbert_embedding": np.random.rand(SBERT_VECTOR_SIZE).tolist(),
+                "faces_text_sbert_embedding": np.zeros(SBERT_VECTOR_SIZE).tolist(),
                 "ocr_text_sbert_embedding": ocr_vector
             }
 
