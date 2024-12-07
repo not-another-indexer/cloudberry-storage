@@ -308,9 +308,9 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
         combined_results = {}
         logger.info(f"Parameters: {parameters}")
         logger.info(f"Wanted count: {count}")
-        logger.info(f"One-peace results: {one_peace_results.values()[:count]}")
-        logger.info(f"Description similarity results: {description_results.values()[:count]}")
-        logger.info(f"Ocr similarity results: {ocr_results.values()[:count]}")
+        logger.info(f"One-peace results: {one_peace_results}")
+        logger.info(f"Description similarity results: {description_results}")
+        logger.info(f"Ocr similarity results: {ocr_results}")
 
         for source_results, parameter_name in [
             (one_peace_results, 'SEMANTIC_ONE_PEACE_SIMILARITY'),
