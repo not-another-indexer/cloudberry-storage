@@ -11,8 +11,7 @@ from io import BytesIO
 from sentence_transformers import SentenceTransformer
 from torchvision import transforms
 from qdrant_client import QdrantClient, models
-from qdrant_client.grpc import PointStruct
-from qdrant_client.http.models import Distance, VectorParams
+from qdrant_client.models import Distance, VectorParams
 from qdrant_client.http.exceptions import UnexpectedResponse
 import numpy as np
 
@@ -150,7 +149,8 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
 
             image = Image.open(BytesIO(content_data)).convert("RGB")
             image_vector = self.vectorize_image(image).tolist()
-            # image_vector = np.random.rand(512).tolist()
+            # image_vector = np.random.rand(ONE_PEACE_VECTOR_SIZE).tolist()
+            logger.info(f"Размер вектора изображения: {len(image_vector)}")
 
             # Получение OCR текста и вектора
             ocr_text = pytesseract.image_to_string(image, lang='eng+rus').strip()
@@ -218,13 +218,13 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
             logger.info(f"Размер изображения после преобразований: {image_tensor.shape}")
             with torch.no_grad():
                 embedding = self.one_peace_model.extract_image_features(image_tensor).cpu().numpy()
-            logger.info(f"Размер вектора изображения: {embedding.shape}")
+            logger.info(f"Shape вектора изображения: {embedding.shape}")
 
             expected_size = ONE_PEACE_VECTOR_SIZE
             if embedding.shape[-1] != expected_size:
                 raise ValueError(f"Размер вектора изображения {embedding.shape[-1]}, ожидается {expected_size}")
 
-            return embedding
+            return embedding.flatten()
         except Exception as e:
             logger.error(f"Ошибка векторизации изображения: {e}", exc_info=True)
             raise
@@ -270,7 +270,7 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
         text_tokens = self.one_peace_model.process_text([query])
         with torch.no_grad():
             one_peace_vector = self.one_peace_model.extract_text_features(text_tokens).cpu().numpy().tolist()
-        # one_peace_vector = np.random.rand(512).tolist()
+        # one_peace_vector = np.random.rand(ONE_PEACE_VECTOR_SIZE).tolist()
         sbert_vector = self.text_model.encode(query).tolist()
         # sbert_vector = np.random.rand(SBERT_VECTOR_SIZE).tolist()
 
