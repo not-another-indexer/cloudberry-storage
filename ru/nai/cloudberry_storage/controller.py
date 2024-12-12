@@ -272,7 +272,7 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
         try:
             delete_result = self.client.delete(
                 collection_name=bucket_uuid,
-                points_selector=models.PointIdsList(point_ids=[content_uuid])
+                points_selector=models.PointIdsList(points=[content_uuid])
             )
             logger.info(f"Результат удаления: {delete_result}")
             logger.info(f"Запись с ID {content_uuid} успешно удалена из коллекции {bucket_uuid}.")
