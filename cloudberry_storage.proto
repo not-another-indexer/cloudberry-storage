@@ -3,71 +3,71 @@ syntax = "proto3";
 package cloudberry;
 
 service CloudberryStorage {
-  rpc InitBucket (InitBucketRequest) returns (Empty);
-  rpc DestroyBucket (DestroyBucketRequest) returns (Empty);
-  rpc PutEntry (PutEntryRequest) returns (Empty);
-  rpc RemoveEntry (RemoveEntryRequest) returns (Empty);
-  rpc Find (FindRequest) returns (FindResponse);
+    rpc InitBucket (InitBucketRequest) returns (Empty);
+    rpc DestroyBucket (DestroyBucketRequest) returns (Empty);
+    rpc PutEntry (PutEntryRequest) returns (Empty);
+    rpc RemoveEntry (RemoveEntryRequest) returns (Empty);
+    rpc Find (FindRequest) returns (FindResponse);
 }
 
 message InitBucketRequest {
-  string p_bucket_uuid = 1;
+    string p_bucket_uuid = 1;
 }
 
 message FindRequest {
-  string p_query = 1;
-  string p_bucket_uuid = 2;
-  repeated Coefficient p_parameters = 3;
-  int64 p_count = 4;
+    string p_query = 1;
+    string p_bucket_uuid = 2;
+    repeated Coefficient p_parameters = 3;
+    int64 p_count = 4;
 }
 
 message FindResponse {
-  repeated FindResponseEntry p_entries = 1;
+    repeated FindResponseEntry p_entries = 1;
 }
 
 message FindResponseEntry {
-  string p_content_uuid = 1;
-  repeated Metric p_metrics = 2;
+    string p_content_uuid = 1;
+    repeated Metric p_metrics = 2;
 }
 
 message Coefficient {
-  Parameter p_parameter = 1;
-  double p_value = 2;
+    Parameter p_parameter = 1;
+    double p_value = 2;
 }
 
 message Metric {
-  Parameter p_parameter = 1;
-  double p_value = 2;
+    Parameter p_parameter = 1;
+    double p_value = 2;
 }
 
 enum Parameter {
-  SEMANTIC_ONE_PEACE_SIMILARITY = 0;
-  RECOGNIZED_TEXT_SIMILARITY = 1;
-  TEXTUAL_DESCRIPTION_SIMILARITY = 2;
-  RECOGNIZED_FACE_SIMILARITY = 3;
-  RECOGNIZED_TEXT_BM25_RANK = 4;
-  TEXTUAL_DESCRIPTION_BM25_RANK = 5;
+    SEMANTIC_ONE_PEACE_SIMILARITY = 0;
+    RECOGNIZED_TEXT_SIMILARITY = 1;
+    TEXTUAL_DESCRIPTION_SIMILARITY = 2;
+    RECOGNIZED_FACE_SIMILARITY = 3;
+    RECOGNIZED_TEXT_BM25_RANK = 4;
+    TEXTUAL_DESCRIPTION_BM25_RANK = 5;
 }
 
 message DestroyBucketRequest {
-  string p_bucket_uuid = 1;
+    string p_bucket_uuid = 1;
 }
 
 message ContentMetadata {
-  string p_content_uuid = 1;
-  string p_bucket_uuid = 2;
-  string p_extension = 3;
-  string p_description = 4;
+    string p_content_uuid = 1;
+    string p_bucket_uuid = 2;
+    string p_extension = 3;
+    string p_description = 4;
 }
 
 message PutEntryRequest {
-  ContentMetadata p_metadata = 1;
-  bytes p_data = 2;
+    ContentMetadata p_metadata = 1;
+    bytes p_data = 2;
 }
 
 message RemoveEntryRequest {
-  string p_content_uuid = 1;
-  string p_bucket_uuid = 2;
+    string p_content_uuid = 1;
+    string p_bucket_uuid = 2;
 }
 
 message Empty {}
