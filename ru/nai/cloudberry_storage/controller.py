@@ -248,6 +248,12 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
         content_uuid = request.p_content_uuid
 
         logger.info(f"Запрос на удаление записи с ID {content_uuid} из коллекции {bucket_uuid}.")
+        if not bucket_uuid or not content_uuid:
+            logger.error("Неверный запрос: отсутствуют bucket_uuid или content_uuid.")
+            context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+            context.set_details("Поля bucket_uuid и content_uuid обязательны.")
+            return pb2.Empty()
+
         try:
             # Проверка существования коллекции
             self.client.get_collection(bucket_uuid)
@@ -257,14 +263,24 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
             context.set_code(grpc.StatusCode.NOT_FOUND)
             context.set_details(f"Коллекция с bucket_uuid {bucket_uuid} не найдена.")
             return pb2.Empty()
+        except Exception as e:
+            logger.error(f"Ошибка при проверке коллекции {bucket_uuid}: {e}", exc_info=True)
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details(f"Ошибка при проверке коллекции: {e}")
+            return pb2.Empty()
 
         try:
-            # Удаление точки по её ID
-            self.client.delete(
+            delete_result = self.client.delete(
                 collection_name=bucket_uuid,
                 points_selector=models.PointIdsList(point_ids=[content_uuid])
             )
+            logger.info(f"Результат удаления: {delete_result}")
             logger.info(f"Запись с ID {content_uuid} успешно удалена из коллекции {bucket_uuid}.")
+        except UnexpectedResponse as e:
+            logger.error(f"Ошибка удаления записи: {e}", exc_info=True)
+            context.set_code(grpc.StatusCode.NOT_FOUND)
+            context.set_details(f"Запись с ID {content_uuid} не найдена в коллекции {bucket_uuid}.")
+            return pb2.Empty()
         except Exception as e:
             logger.error(f"Ошибка при удалении записи: {e}", exc_info=True)
             context.set_code(grpc.StatusCode.INTERNAL)
@@ -275,10 +291,12 @@ class CloudberryStorageServicer(pb2_grpc.CloudberryStorageServicer):
 
     def Find(self, request, context):
         logger.info(f"Search request with query: {request.p_query}.")
+
         def translate_to_english(text):
             translator = GoogleTranslator(source='ru', target='en')
             translated_text = translator.translate(text)
             return translated_text
+
         query = request.p_query
         bucket_uuid = request.p_bucket_uuid
         parameters = request.p_parameters
